@@ -62,12 +62,10 @@ class ContextinfoPlugin extends OntoWiki_Plugin
             $result = $selectedModel->sparqlQuery($query);
 
             if (count($result) > 0) {
-                $resultstrings = array_map(
-                        function($val) {
-                            return $val['comment'];
-                        },
-                        $result
-                        );
+                $resultstrings = array();
+                foreach ($result as $res) {
+                    $resultstrings[] = $res['comment'];
+                }
                 return join(PHP_EOL, $resultstrings);
                 return $result[0]['comment'];
             }
