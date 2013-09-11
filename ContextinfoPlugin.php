@@ -49,26 +49,32 @@ class ContextinfoPlugin extends OntoWiki_Plugin
         $selectedModel = $owApp->selectedModel;
 
         /*
-         * this will return only the first comment type found in the
-         * the doap.n3
-         * TODO: move the query out of the foreach loop and query
-         *       all properties at once
+         * to query different comments we build a query that returns
+         * the union of all comment values that are stated in the doap.n3
+         *
+         * every comment that is found will be displayed as tooltip
+         *
+         * TODO: implement support for language settings
          */
+        $property_queries = array();
         foreach ($this->_privateConfig->properties->toArray() as $property) {
-            $query = 'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' . PHP_EOL;
-            $query.= 'SELECT ?comment WHERE {' . PHP_EOL;
-            $query.= '       <' . $predicateUri . '> <' . $property . '> ?comment' . PHP_EOL;
-            $query.= '}';
-            $result = $selectedModel->sparqlQuery($query);
+            $property_queries[] = '        { <' . $predicateUri . '> <' . $property . '> ?comment . }';
+        }
 
-            if (count($result) > 0) {
-                $resultstrings = array();
-                foreach ($result as $res) {
-                    $resultstrings[] = $res['comment'];
-                }
-                return join(PHP_EOL, $resultstrings);
-                return $result[0]['comment'];
+        $query = 'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' . PHP_EOL;
+        $query.= 'SELECT DISTINCT ?comment WHERE {' . PHP_EOL;
+        $query.= join(PHP_EOL . '          UNION' . PHP_EOL, $property_queries) . PHP_EOL;
+        $query.= '}';
+
+        $result = $selectedModel->sparqlQuery($query);
+
+        if (count($result) > 0) {
+            $resultstrings = array();
+            foreach ($result as $res) {
+                $resultstrings[] = $res['comment'];
             }
+            return join(PHP_EOL, $resultstrings);
+            return $result[0]['comment'];
         }
     }
 
